@@ -149,7 +149,8 @@ a.pl{color:inherit;text-decoration:underline;text-decoration-color:var(--line);t
 .mini>.mring{flex-direction:row;align-items:center;justify-content:space-between;gap:6px}.mring>div{display:flex;flex-direction:column;min-width:0}.rng{flex:none}
 .mini .v{font-size:19px}.mini>div{padding:9px 10px}
 .bt2g .v{font-size:21px}.bt2m{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
-.rk{display:inline-block;min-width:20px;font-weight:700;font-family:"Barlow Condensed",Barlow,sans-serif;font-size:15px}.rk1{color:#d4a017}.rk2{color:#98a2ad}.rk3{color:#b5793e}
+.rk{display:inline-block;min-width:20px;font-weight:700;font-family:"Barlow Condensed",Barlow,sans-serif;font-size:15px}.rk1{color:#d4a017}.rk2{color:#98a2ad}.hbtns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.modal .dlbtn,.dlbtn{background:transparent!important;color:var(--ink)!important;border:1px solid var(--line)!important}
+.rk3{color:#b5793e}
 #lbt td .mtr{width:96px;height:4px;margin-top:5px}.hst td .mtr{height:4px;margin-top:4px;max-width:110px}
 
 .hero{position:relative}.bossrow{display:flex;align-items:center;gap:12px;margin:4px 0}
@@ -253,8 +254,8 @@ function header(){
  const opts=PL.map((p,i)=>({p,i})).sort((a,b)=>b.p.cur-a.p.cur||a.p.n.localeCompare(b.p.n,undefined,{sensitivity:"base"}));
  const cur=opts.filter(o=>o.p.cur),old=opts.filter(o=>!o.p.cur),sel=view();
  const o=x=>`<option value="${SL[x.i]}"${sel===SL[x.i]?" selected":""}>${esc(x.p.n)}</option>`;
- return `<div class="hdr"><div class="brand"><span class="gmark" aria-hidden="true">BW</span><div><h1 class="gname">Bannedwords</h1><div class="gsub">Guild boss log</div></div></div>${owner?'<button type="button" id="openadd" class="addbtn">＋ Add runs</button>':""}</div>
-${MDEF}${PREVIEW?'<p class="pvb">Preview B, with game-style touches. This copy doesn’t save, and your real guild page is unchanged.</p>':""}<p class="sub">Updated through ${X.dates.length?md(X.dates[X.dates.length-1]):"—"}. ${PL.filter(p=>p.cur).length} players. Scores are both runs combined.</p>
+ return `<div class="hdr"><div class="brand"><span class="gmark" aria-hidden="true">BW</span><div><h1 class="gname">Bannedwords</h1><div class="gsub">Guild boss log</div></div></div>${owner?'<div class="hbtns"><button type="button" id="dlbtn" class="addbtn dlbtn">Download page</button><button type="button" id="openadd" class="addbtn">＋ Add runs</button></div>':""}</div>
+${MDEF}${PREVIEW?'<p class="pvb">Preview B, with game-style touches. This copy doesn’t save, and your real guild page is unchanged.</p>':""}${owner?'<p class="hint" id="dlst" role="status" style="margin:4px 0 0;text-align:right"></p>':""}<p class="sub">Updated through ${X.dates.length?md(X.dates[X.dates.length-1]):"—"}. ${PL.filter(p=>p.cur).length} players. Scores are both runs combined.</p>
 <div class="bar picker"><label for="pp" style="margin:0">Show</label><select id="pp"><option value="guild"${sel==="guild"?" selected":""}>Whole guild</option><optgroup label="Players">${cur.map(o).join("")}</optgroup>${old.length?`<optgroup label="Former players">${old.map(o).join("")}</optgroup>`:""}</select>${sel!=="guild"?`<span class="hint">Your link: <a href="#${sel}">#${sel}</a></span>`:""}</div>`;
 }
 function view(){const h=(location.hash||"").slice(1);if(h==="guild"||BYS[h]!=null)return h;try{const s=localStorage.getItem("guildView");if(s&&(s==="guild"||BYS[s]!=null))return s}catch(e){}return "guild"}
@@ -476,6 +477,8 @@ function modal(){const cd=nowBossDate();return `<div class="modal" id="addm" hid
 <div data-p="shot" hidden><p class="lg">Choose a screenshot of scores, or paste one here. Claude reads the names and numbers; check them before saving.</p><input type="file" id="aimg" accept="image/*"><div id="aimgp"></div><div class="bar" style="margin-top:8px"><button type="button" id="aread" disabled>Read scores</button><span class="hint" id="ast"></span></div></div>
 <h3 class="rvh">Check before saving</h3><div id="rv"></div>
 <div class="bar" style="margin-top:10px"><button type="button" id="svb" disabled>Save</button><span class="hint" id="pst2"></span></div></div></div>`}
+function pageHTML(nPL,nE){const json=JSON.stringify({players:nPL,e:nE,pbs:G.pbs||[]}).replace(/</g,"\\u003c"),SC="</"+"script>",css=document.getElementById("css").textContent;return '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Bannedwords · Guild Boss Log</title>\n<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap" rel="stylesheet">\n<style id="css">'+css+'</style></head>\n<body><div class="wrap" id="app"><p class="sub">Loading…</p></div>\n<script id="gdata" type="application/json">'+json+SC+"\n<script>"+SRC+SC+"\n</body></html>"}
+async function dlPage(){const st=document.getElementById("dlst");const say=t=>{if(st)st.textContent=t};try{const d=await window.claude.use("downloads");if(!d){say("Downloads aren’t available in this view.");return}await d.save({filename:"index.html",data:new Blob([pageHTML(PL,E)],{type:"text/html"})});say("Saved index.html with every score so far. Upload it to GitHub to update the live page.")}catch(e){const c=e&&e.code;say(c==="unavailable"?"Downloads aren’t available in this view.":c&&/declin|dismiss|cancel|not_granted/.test(c)?"Download cancelled.":"Couldn’t download ("+(c||"error")+"). Nothing changed.")}}
 function closeM(){const m=document.getElementById("addm");if(m)m.hidden=true}
 function wireAdd(){const ob=document.getElementById("openadd"),m=document.getElementById("addm");if(!ob||!m)return;
  ob.onclick=()=>{m.hidden=false;showTab(addTab);refresh();checkShot();setTimeout(()=>{const t=addTab==="paste"?document.getElementById("pst"):document.querySelector("#trows .tn");if(t)t.focus()},60)};
@@ -502,7 +505,7 @@ function wire(){
  const lbf=document.getElementById("lbf");if(lbf)lbf.onchange=()=>{ui.logBoss=lbf.value;render()};
  const lsf=document.getElementById("lsf");if(lsf)lsf.onchange=()=>{ui.logShow=lsf.value;try{localStorage.setItem("guildLogShow",lsf.value)}catch(e){}render()};
  document.querySelectorAll("#glt th[data-k]").forEach(th=>th.onclick=()=>{const k=+th.dataset.k;ui.logSort=ui.logSort.k===k?{k,dir:-ui.logSort.dir}:{k,dir:k===1?1:-1};render()});
- wireAdd()}
+ {const b=document.getElementById("dlbtn");if(b)b.onclick=dlPage}wireAdd()}
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeM()});
 window.addEventListener("hashchange",()=>{const v=view();try{localStorage.setItem("guildView",v)}catch(e){}render();window.scrollTo(0,0)});
 build();render();
