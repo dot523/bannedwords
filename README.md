@@ -1,0 +1,2 @@
+# bannedwords
+boss damage log
