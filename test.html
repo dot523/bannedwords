@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheet connection test</title>
+<style>
+  :root { --bg:#ffffff; --fg:#1a1a1a; --ok:#137333; --bad:#b3261e; color-scheme: light; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121417; --fg:#e8e8e8; --ok:#5bd38a; --bad:#ff8a80; color-scheme: dark; } }
+  body { background:var(--bg); color:var(--fg); font:17px/1.5 system-ui, sans-serif; margin:0; padding:24px; }
+  #status { font-size:2rem; font-weight:700; margin:0 0 12px; }
+  pre { white-space:pre-wrap; word-break:break-word; }
+</style>
+</head>
+<body>
+<p id="status">Testing…</p>
+<pre id="detail"></pre>
+<script>
+  // Published CSV version of the fake test tab (public, fake data only)
+  const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTX-7RjVf4qcZ4lLKkXMNCe0efPYn9jLDM7jEzEo52BfEBO_vuq7Ts54k0kNueB2qlox2I6GRb1KvJx/pub?gid=0&single=true&output=csv";
+  const status = document.getElementById("status");
+  const detail = document.getElementById("detail");
+  fetch(URL_CSV, { cache: "no-store" })
+    .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+    .then(text => {
+      status.textContent = "WORKS";
+      status.style.color = "var(--ok)";
+      // textContent only: sheet data is shown as plain text, never run as code
+      detail.textContent = "Data received:\n\n" + text.slice(0, 500);
+    })
+    .catch(err => {
+      status.textContent = "BLOCKED";
+      status.style.color = "var(--bad)";
+      detail.textContent = "Error: " + err.message;
+    });
+</script>
+</body>
+</html>
